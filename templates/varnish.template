@@ -1,0 +1,25 @@
+{{#backends}}
+backend {{name}} {
+  .host = "{{host}}";
+  .connect_timeout = 1s;
+  .first_byte_timeout = 5s;
+  .between_bytes_timeout = 5s;
+  .probe = {
+    .request = "GET / HTTP/1.1" "Host: healthcheck.internal" "Connection: close";
+    .interval = 10s;
+    .timeout = 15s;
+    .window = 5;
+    .threshold = 4;
+  }
+}
+
+{{/backends}}
+
+director {{backend_name}} random {
+  {{#backends}}
+  {
+    .backend = {{name}};
+    .weight  = {{weight}};
+  }
+  {{/backends}}
+}
