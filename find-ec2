@@ -19,6 +19,7 @@ parser.add_argument('--tagvalue', default='web', help='Tag for backend instances
 parser.add_argument('--name', default='cluster', help='Name for  backend group')
 parser.add_argument('--ownazweight', default='99999', help='Weight for hosts in same AZ')
 parser.add_argument('--dummy', default=False, action='store_true', help='Whether to add a dummy host if no backends found')
+parser.add_argument('--notify', help='Service to reload when regenerated')
 parser.add_argument('template', help='Template to use')
 parser.add_argument('output', help='File to write output to')
 args = parser.parse_args()
@@ -79,3 +80,5 @@ if md5_file(args.output) != hashlib.md5(rendered).digest():
     f = open(args.output, "w")
     f.write(rendered)
     f.close()
+    if args.notify:
+        subprocess.call("/sbin/service %s reload" % args.notify,shell=True,stderr=subprocess.STDOUT)
