@@ -1,4 +1,4 @@
-# Varnish EC2 Backend
+# find-ec2
 
 A python script to generate a file from a template, with hosts found by
 EC2 tag.

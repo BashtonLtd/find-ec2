@@ -57,7 +57,7 @@ for res in ec2conn.get_all_instances():
         try:
             if i.tags[args.tagname] == args.tagvalue and i.state == 'running' and i.vpc_id == vpc:
                 details = { 
-                        'name': i.id.replace('-',''), # Varnish doesn't allow dashes in names
+                        'name': i.id.replace('-','_'), # Varnish doesn't allow dashes in names
                         'host': i.private_ip_address,
                         }
                 if i.placement == utils.get_instance_metadata()['placement']['availability-zone']:
