@@ -19,12 +19,13 @@ parser.add_argument('--tagvalue', default='web', help='Tag for backend instances
 parser.add_argument('--name', default='cluster', help='Name for  backend group')
 parser.add_argument('--ownazweight', default='99999', help='Weight for hosts in same AZ')
 parser.add_argument('--dummy', default=False, action='store_true', help='Whether to add a dummy host if no backends found')
+parser.add_argument('--dummyhostname', default='dummy', help='Hostname of dummy host if no backends found')
 parser.add_argument('--notify', help='Service to reload when regenerated')
 parser.add_argument('template', help='Template to use')
 parser.add_argument('output', help='File to write output to')
 args = parser.parse_args()
 
-data = { 
+data = {
          'backend_name': args.name,
          'backends': [ ]
        }
@@ -56,7 +57,7 @@ for res in ec2conn.get_all_instances():
     for i in res.instances:
         try:
             if i.tags[args.tagname] == args.tagvalue and i.state == 'running' and i.vpc_id == vpc:
-                details = { 
+                details = {
                         'name': i.id.replace('-','_'), # Varnish doesn't allow dashes in names
                         'host': i.private_ip_address,
                         }
@@ -70,7 +71,7 @@ for res in ec2conn.get_all_instances():
 
 if args.dummy and not data['backends']:
     # Add some dummy data - Varnish won't load without a backend
-    data['backends'] = [{ 'name': 'dummy', 'host': '255.255.255.254', 'weight': 1 }]
+    data['backends'] = [{ 'name': args.dummyhostname, 'host': '255.255.255.254', 'weight': 1 }]
 
 renderer = Renderer()
 rendered = renderer.render_path(args.template, data)
