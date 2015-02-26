@@ -14,9 +14,10 @@ import pystache
 from pystache import Renderer
 
 parser = argparse.ArgumentParser(description='Build partial Varnish config with backends from EC2 API')
-parser.add_argument('--tagname',  default='machinetype', help='Tag for backend instances')
-parser.add_argument('--tagvalue', default='web', help='Tag for backend instances')
-parser.add_argument('--name', default='cluster', help='Name for  backend group')
+parser.add_argument('--tagname', default='', help='Tag key for backend instances e.g "Environment"')
+parser.add_argument('--tagvalue', default='', help='Tag value for backend instances e.g "Live"')
+parser.add_argument('--tags', default='', help='Comma separated tags for backend instances e.g "Service=web,Environment=Live"')
+parser.add_argument('--name', default='cluster', help='Name for backend group')
 parser.add_argument('--ownazweight', default='99999', help='Weight for hosts in same AZ')
 parser.add_argument('--dummy', default=False, action='store_true', help='Whether to add a dummy host if no backends found')
 parser.add_argument('--dummyhostname', default='dummy', help='Hostname of dummy host if no backends found')
@@ -50,15 +51,32 @@ def md5_file(filename):
     f.close()
     return md5sum
 
+# Compare whether args_tags is in ec2_tags
+def compare_tags(ec2_tags,args_tags):
+    return all(item in ec2_tags.items() for item in args_tags.items())
+
+# Convert old tag parameters into key=value format
+if args.tagname:
+    legacy_tags = args.tagname + "=" + args.tagvalue
+    if args.tags:
+        new_tags = legacy_tags + "," + args.tags
+    else:
+        new_tags = legacy_tags
+else:
+    new_tags = args.tags
+
+# Convert tags string to dict
+args_tags = dict(item.split("=") for item in new_tags.split(","))
+
 ec2conn = boto.connect_ec2(
         region=get_region(utils.get_instance_metadata()['placement']['availability-zone'][:-1]))
 vpc = get_vpc()
 for res in ec2conn.get_all_instances():
     for i in res.instances:
         try:
-            if i.tags[args.tagname] == args.tagvalue and i.state == 'running' and i.vpc_id == vpc:
+            if compare_tags(i.tags,args_tags) and i.state == 'running' and i.vpc_id == vpc:
                 details = {
-                        'name': i.id.replace('-','_'), # Varnish doesn't allow dashes in names
+                        'name': str(i.id + "-" + args.name).replace('-','_'), # Varnish doesn't allow dashes in names
                         'host': i.private_ip_address,
                         'az': i.placement
                         }
