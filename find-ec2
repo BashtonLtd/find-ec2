@@ -76,7 +76,7 @@ for res in ec2conn.get_all_instances():
         try:
             if compare_tags(i.tags,args_tags) and i.state == 'running' and i.vpc_id == vpc:
                 details = {
-                        'name': i.id.replace('-','_'), # Varnish doesn't allow dashes in names
+                        'name': str(i.id + "-" + args.name).replace('-','_'), # Varnish doesn't allow dashes in names
                         'host': i.private_ip_address,
                         'az': i.placement
                         }
