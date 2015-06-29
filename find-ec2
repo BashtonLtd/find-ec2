@@ -92,6 +92,9 @@ if args.dummy and not data['backends']:
     # Add some dummy data - Varnish won't load without a backend
     data['backends'] = [{ 'name': args.dummyhostname, 'host': '255.255.255.254', 'weight': 1 }]
 
+# Sort the data hash so we don't regenerate config when the ec2 API returns
+# things in a different order
+data['backends'] = sorted(data['backends'], key=lambda k: k['name'])
 renderer = Renderer()
 rendered = renderer.render_path(args.template, data)
 
