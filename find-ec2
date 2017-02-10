@@ -88,7 +88,7 @@ for res in ec2conn.get_all_instances():
         except:
             pass
 
-if args.dummy and os.paths.isfile(args.output) and not data['backends']:
+if args.dummy and not os.path.isfile(args.output) and not data['backends']:
     # Add some dummy data - Varnish won't load without a backend
     # if there's already a file there, assume it's fine, maybe ec2 API is borked
     data['backends'] = [{ 'name': args.dummyhostname, 'host': '255.255.255.254', 'weight': 1 }]
