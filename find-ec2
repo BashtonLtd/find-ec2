@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-import sys
 import subprocess
 import argparse
+import os
 
 import boto
 from boto import ec2
@@ -10,7 +10,6 @@ from boto import utils
 
 import hashlib
 
-import pystache
 from pystache import Renderer
 
 parser = argparse.ArgumentParser(description='Build partial Varnish config with backends from EC2 API')
@@ -35,6 +34,7 @@ def get_region(region):
     for r in ec2.regions():
         if r.name == region:
             return r
+
 
 # Returns VPC ID of the local host
 def get_vpc():
@@ -88,8 +88,9 @@ for res in ec2conn.get_all_instances():
         except:
             pass
 
-if args.dummy and not data['backends']:
+if args.dummy and os.paths.isfile(args.output) and not data['backends']:
     # Add some dummy data - Varnish won't load without a backend
+    # if there's already a file there, assume it's fine, maybe ec2 API is borked
     data['backends'] = [{ 'name': args.dummyhostname, 'host': '255.255.255.254', 'weight': 1 }]
 
 # Sort the data hash so we don't regenerate config when the ec2 API returns
@@ -98,7 +99,7 @@ data['backends'] = sorted(data['backends'], key=lambda k: k['name'])
 renderer = Renderer()
 rendered = renderer.render_path(args.template, data)
 
-if md5_file(args.output) != hashlib.md5(rendered).digest():
+if md5_file(args.output) != hashlib.md5(rendered).digest() and data['backends']:
     # File has changed on disk
     f = open(args.output, "w")
     f.write(rendered)
